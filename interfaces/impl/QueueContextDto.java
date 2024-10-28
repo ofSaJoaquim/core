@@ -18,12 +18,15 @@ public class QueueContextDto {
 	private String transactionUUID;
 	private String clientId;
 	
+	
 	public QueueContextDto(ContextData contextData) {
 		super();
 		if(contextData.getIdentity()!=null) {
 			this.userId = contextData.getIdentity().getUserId();
 			this.userName = contextData.getIdentity().getUserName();			
 			this.coastCenterId = contextData.getIdentity().getCoastCenterId();
+			
+			
 		}else {
 			this.userId = null;
 			this.userName = null;			
@@ -31,6 +34,7 @@ public class QueueContextDto {
 		}
 		this.transactionUUID = contextData.getRequest().getTransactionUUID();
 		this.clientId = contextData.getRequest().getClientId();
+		
 		
 	}
 

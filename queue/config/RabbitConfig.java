@@ -14,18 +14,20 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import br.com.branetlogistica.core.context.Context;
+import br.com.branetlogistica.core.queue.dto.QueueDto;
+import br.com.branetlogistica.core.queue.factory.QueueFactory;
 import br.com.branetlogistica.core.tenant.model.Tenant;
 import br.com.branetlogistica.core.tenant.service.TenantService;
 
 
 @Component
 public class RabbitConfig {
-
 	
-	private final static Map<String,ConnectionFactory> connections = new HashMap<String, ConnectionFactory>();	
-	private final static Map<String,RabbitTemplate> templates = new HashMap<String, RabbitTemplate>();	
-	
+	private final static Map<String,RabbitClient> clients = new HashMap<String, RabbitClient>();	
+		
 	@Value("${app.queue.host}")
 	private String queueHost;
 	
@@ -41,10 +43,30 @@ public class RabbitConfig {
 	@Autowired
 	private TenantService tenantService;
 	
+	@Autowired
+	private QueueFactory queueFactory;
+	
+	@Autowired
+	private ObjectMapper objectMapper;
+	
+	public RabbitClient getClient(String tenantId) {
+		if(!clients.containsKey(tenantId)) {
+			createClient(tenantId);
+			clients.put(tenantId, createClient(tenantId));
+		}
+		return clients.get(tenantId);
+	}
+	
+	public RabbitClient createClient(String tenantId) {
+		ConnectionFactory connection = createConnection(tenantId);
+		RabbitTemplate template =  createTemplate(connection);
+		RabbitAdmin admin = new RabbitAdmin(connection);
+		RabbitClient client = new RabbitClient(tenantId, connection, template, admin);
+		return client;
+	}
+	
 	public ConnectionFactory getConnection(String tenantId) {
-		if(!connections.containsKey(tenantId))		
-			connections.put(tenantId, createConnection(tenantId));
-		return connections.get(tenantId);
+		return getClient(tenantId).getConnectionFactory();
 	}
 	
 	public RabbitTemplate getTemplate() {
@@ -52,14 +74,11 @@ public class RabbitConfig {
 	}
 	
 	public RabbitTemplate getTemplate(String tenantId) {
-		if(!templates.containsKey(tenantId))
-			createTemplate(tenantId);
-		return templates.get(tenantId);
+		return getClient(tenantId).getRabbitTemplate();
 	}
 	
-	private RabbitTemplate createTemplate(String tenantId) {
-		RabbitTemplate template = new RabbitTemplate(getConnection(tenantId));
-		templates.put(tenantId, template);
+	private RabbitTemplate createTemplate(ConnectionFactory connectionFactory) {		
+		RabbitTemplate template = new RabbitTemplate(connectionFactory);
 		return template;
 	}
 	
@@ -75,10 +94,8 @@ public class RabbitConfig {
 		return connectionFactory;
 	}
 	
-
-	
 	public RabbitAdmin getRabbitAdmin(String tenantId) {
-		return new RabbitAdmin(getConnection(tenantId));
+		return getClient(tenantId).getRabbitAdmin();
 	}
 	
 	public List<RabbitAdmin> getAllRabbitAdmin(){
@@ -111,6 +128,15 @@ public class RabbitConfig {
      
         return container;
     }
+		
+	public void convertAndSendWithContext(Object object, String exchange, String key) throws Exception {
+		RabbitClient client = getClient(Context.getContextData().getRequest().getClientId());
+		QueueDto queueDto  = queueFactory.createQueueDto(object);	
+		String json = objectMapper.writeValueAsString(queueDto);
+		client.getRabbitTemplate().convertAndSend(exchange, key , json );
+	}
+	
+
 	
 	
 	

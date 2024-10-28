@@ -28,14 +28,12 @@ public class QueueFactory {
 	public QueueContextDto createQueueContext() {
 		return new QueueContextDto(Context.getContextData());
 	}
-
-	public QueueDto createQueueDto(IQueueDto dto) {
+	
+	public QueueDto createQueueDto(Object dto) {
 		return QueueDto.builder().context(createQueueContext()).dto(dto).build();
-
 	}
 	
 	
-
 	public <T extends IQueueDto> T createQueueDto(String json, String queueName , String className, String methodName, Class<T> clazz) {
 		
 		try {
