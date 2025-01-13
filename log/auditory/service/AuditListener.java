@@ -19,7 +19,6 @@ public class AuditListener  {
 		IEntity entity = (IEntity)object;
 		ContextData contextData = Context.getContextData();
 		entity.setCreatedAt(LocalDateTime.now());	
-		entity.setVersion(1l);
 		if (contextData != null)
 			entity.setCreatedBy(contextData.getIdentity() != null ? contextData.getIdentity().getUserId() : null);
 	}
@@ -29,7 +28,6 @@ public class AuditListener  {
 		IEntity entity = (IEntity)object;
 		ContextData contextData = Context.getContextData();
 		entity.setUpdatedAt(LocalDateTime.now());
-		entity.setVersion(entity.getVersion()+1l);
 		if(contextData!=null)
 			entity.setUpdatedBy(contextData.getIdentity()!=null?contextData.getIdentity().getUserId():null);
 	}
