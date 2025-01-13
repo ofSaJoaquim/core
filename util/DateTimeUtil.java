@@ -12,8 +12,9 @@ import java.util.List;
 
 import org.springframework.http.HttpStatus;
 
+import br.com.branetlogistica.core.enums.DiaMesEnum;
+import br.com.branetlogistica.core.enums.DiaSemanaEnum;
 import br.com.branetlogistica.core.exceptions.impl.ApiException;
-import br.com.branetlogistica.msagenda.modulos.cronograma.enums.DiaSemanaEnum;
 
 
 public class DateTimeUtil {
@@ -43,18 +44,25 @@ public class DateTimeUtil {
 		return date.format(DateTimeFormatter.ISO_DATE);
 	}
 	
-	public static LocalDateTime proximoDiaUtil(LocalDateTime dataHoraTeste, Integer numeroDias, List<DiaSemanaEnum> diasSemana)  {
+	public static LocalDateTime proximoDiaUtil(LocalDateTime dataHoraTeste, Integer numeroDias, List<DiaSemanaEnum> diasSemana, List<DiaMesEnum> diasMes)  {
 		LocalTime horaTeste = dataHoraTeste.toLocalTime();
-		LocalDate dataTeste = proximoDiaUtil(dataHoraTeste.toLocalDate(), numeroDias, diasSemana);
+		LocalDate dataTeste = proximoDiaUtil(dataHoraTeste.toLocalDate(), numeroDias, diasSemana, diasMes);
 		return LocalDateTime.of(dataTeste, horaTeste);
 	}
 	
-	public static LocalDate proximoDiaUtil(LocalDate dataTeste, Integer numeroDias, List<DiaSemanaEnum> diasSemana)  {
+	public static LocalDateTime proximoDiaUtil(LocalDateTime dataHoraTeste, Integer numeroDias, List<DiaSemanaEnum> diasSemana)  {
+		LocalTime horaTeste = dataHoraTeste.toLocalTime();
+		LocalDate dataTeste = proximoDiaUtil(dataHoraTeste.toLocalDate(), numeroDias, diasSemana, null);
+		return LocalDateTime.of(dataTeste, horaTeste);
+	}
+	
+	public static LocalDate proximoDiaUtil(LocalDate dataTeste, Integer numeroDias, 
+			List<DiaSemanaEnum> diasSemana, List<DiaMesEnum> diasMes)  {
 		if(dataTeste == null)
 			throw new ApiException(HttpStatus.INTERNAL_SERVER_ERROR, "DataUtil: Data teste não pode ser nula");
 		
-		if(diasSemana == null || diasSemana.isEmpty())
-			throw new ApiException(HttpStatus.INTERNAL_SERVER_ERROR,"DataUtil: Dias da semana não pode ser nula");
+		if((diasSemana == null || diasSemana.isEmpty()) && (diasMes == null || diasMes.isEmpty()))
+			throw new ApiException(HttpStatus.INTERNAL_SERVER_ERROR,"DataUtil: Ambos dias da semana e dias mês não pode ser nulos");
 		
 		if(numeroDias == null || numeroDias < 0)
 			throw new ApiException(HttpStatus.INTERNAL_SERVER_ERROR,"DataUtil: Numero de dias não pode ser nulo");
@@ -65,7 +73,7 @@ public class DateTimeUtil {
 		
 		
 		for(int i = 0; i < 10000; i++) {
-			if(isDiaUtil(dataProcessada, diasSemana))
+			if(isDiaUtil(dataProcessada, diasSemana, diasMes))
 				diasProcessado++;	
 			if(diasProcessado>=numeroDias)
 				return dataProcessada;
@@ -78,23 +86,41 @@ public class DateTimeUtil {
 			
 	}
 	
+	private static boolean isDiaSemanaUtil(LocalDate dataTeste, List<DiaSemanaEnum> diasSemana) {
+		if(diasSemana == null || diasSemana.isEmpty())
+			return true;
+				
+		return diasSemana.stream().anyMatch(
+				x -> x.getValue().equals(
+						dataTeste.getDayOfWeek().getValue()));	
+	}
 	
 	public static boolean isDiaUtil(LocalDate dataTeste, List<DiaSemanaEnum> diasSemana) {
+		return isDiaUtil(dataTeste, diasSemana, null);
+	}
+	
+	public static boolean isDiaUtil(LocalDate dataTeste, List<DiaSemanaEnum> diasSemana, List<DiaMesEnum> diasMes) {
 			
 		if(dataTeste == null)
 			throw new ApiException(HttpStatus.INTERNAL_SERVER_ERROR,"DataUtil: Data teste não pode ser nula");
 		
-		if(diasSemana == null || diasSemana.isEmpty())
-			throw new ApiException(HttpStatus.INTERNAL_SERVER_ERROR,"DataUtil: Dias da semana não pode ser nula");
+		if((diasSemana == null || diasSemana.isEmpty()) && (diasMes == null || diasMes.isEmpty()))
+			throw new ApiException(HttpStatus.INTERNAL_SERVER_ERROR,"DataUtil: Ambos dias da semana e dias mês não pode ser nulos");
 		
-//		if(DataUtils.isFeriado(DataUtils.toDate(dataTeste))) {
-//			if(!diasSemana.stream().anyMatch(x -> x.equals(DiaSemanaEnum.FERIADO)))
-//				return false;
-//		}
-//			
-		return diasSemana.stream().anyMatch(
+		if(isDiaSemanaUtil(dataTeste, diasSemana) && isDiaMesUtil(dataTeste, diasMes))
+			return true;
+		return false;
+		
+	}
+	
+	
+	private static boolean isDiaMesUtil(LocalDate dataTeste, List<DiaMesEnum> diasMes) {		
+		if(diasMes == null || diasMes.isEmpty())
+			return true;
+		
+		return diasMes.stream().anyMatch(
 				x -> x.getValue().equals(
-						dataTeste.getDayOfWeek().getValue()));	
+						dataTeste.getDayOfMonth()));
 		
 	}
 	
