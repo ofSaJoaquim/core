@@ -10,8 +10,7 @@ import lombok.Setter;
 @Setter
 public class ActionLink {
 
-	private String action;
-	
+		
 	@JsonIgnore
 	private String uri;
 	
@@ -21,15 +20,13 @@ public class ActionLink {
 		return Context.getContextData().getRequest().getUrl()+uri;
 	}
 	
-	public ActionLink(String action, String uri, String method) {
-		this.action = action;
+	public ActionLink(String uri, String method) {
 		this.uri = uri;
 		this.method = method;
 	}
 	
 	
-	public ActionLink(ActionLink actionLink, String uri) {
-		this.action = actionLink.getAction();
+	public ActionLink(ActionLink actionLink, String uri) {		
 		this.method = actionLink.getMethod();
 		this.uri = uri;
 	}
